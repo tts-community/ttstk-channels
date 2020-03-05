@@ -1,47 +1,48 @@
 import * as net from "net";
-import {ExecuteLuaClientMessage, GetLuaScriptsClientMessage, SaveAndPlayClientMessage, ScriptState, CustomClientMessage, ClientMessage} from "./domain/TabletopSimulatorTcpContracts"
+import { ExecuteLuaClientMessage, GetLuaScriptsClientMessage, SaveAndPlayClientMessage, ScriptState, CustomClientMessage, ClientMessage } from "./domain/TabletopSimulatorTcpContracts"
 
 export class TabletopSimulatorClient {
     private readonly REMOTE_DOMAIN = "localhost";
     private readonly REMOTE_PORT = 39999;
-    private connection : net.Socket;
-    private connected : boolean = false;
+    private connection: net.Socket;
+    private connected: boolean = false;
 
-    constructor()
-    {
+    constructor() {
         this.connection = this.createConnection();
         this.connected = true;
     }
 
-    public GetLuaScripts = () => this.sendMessage(new GetLuaScriptsClientMessage());
+    public GetLuaScriptsAsync = () => this.sendMessageAsync(new GetLuaScriptsClientMessage());
 
-    public SaveAndPlay = (scriptStates: ScriptState[]) => this.sendMessage(new SaveAndPlayClientMessage(scriptStates));
+    public SaveAndPlayAsync = (scriptStates: ScriptState[]) => this.sendMessageAsync(new SaveAndPlayClientMessage(scriptStates));
 
-    public CustomMessage = (customMessage : object) => this.sendMessage(new CustomClientMessage(customMessage));
+    public CustomMessageAsync = (customMessage: object) => this.sendMessageAsync(new CustomClientMessage(customMessage));
 
-    public ExecuteLua = (scriptBody : string) => this.sendMessage(new ExecuteLuaClientMessage(scriptBody));
-    
-    public Close = () =>
-    {
-        if (this.connected)
-        {
+    public ExecuteLuaAsync = (scriptBody: string) => this.sendMessageAsync(new ExecuteLuaClientMessage(scriptBody));
+
+    public Close = () => {
+        if (this.connected) {
             this.connection.end();
         }
     }
 
-    private sendMessage = (clientMessage: ClientMessage) =>
-    {
-        if (!this.connected)
-        {
+    private sendMessageAsync = async (clientMessage: ClientMessage) => {
+        if (!this.connected) {
             this.connection = this.createConnection();
             this.connected = true;
         }
 
         this.connection.write(clientMessage.toString());
+
+        await new Promise(resolve => {
+            this.connection.on('close', async () => {
+                this.connected = false;
+                resolve();
+            });
+        });
     }
 
-    private createConnection = () : net.Socket =>
-    {
+    private createConnection = (): net.Socket => {
         var connection = net.createConnection(this.REMOTE_PORT, this.REMOTE_DOMAIN)
             .on('connect', this.onConnectHandler)
             .on('data', this.onDataHandler)
@@ -55,47 +56,41 @@ export class TabletopSimulatorClient {
         return connection;
     }
 
-    private onConnectHandler = () =>
-    {
+    private onConnectHandler = () => {
         console.log(`Client connected to ${this.REMOTE_DOMAIN}:${this.REMOTE_PORT}`)
     }
 
-    private onDataHandler = (data: Buffer) =>
-    {
+    private onDataHandler = (data: Buffer) => {
         console.log(`Client received data '${data.toJSON().toString()}'`)
     }
 
-    private onDrain = () =>
-    {
+    private onDrain = () => {
         console.log('Client connection drained.');
     }
 
-    private onError = (error: Error) =>
-    {
+    private onError = (error: Error) => {
         console.error(error);
         console.log(error.stack);
     }
 
-    private onEnd = () =>
-    {
+    private onEnd = () => {
         this.connected = false;
         console.log("Client Connection Ended");
     }
 
-    private onClose = () =>
-    {
+    private onClose = () => {
         this.connected = false;
         console.log("Client Connection Closed");
     }
 
-    private onLookup = (error: Error, address: string, family: string | number, host: string) =>
-    {
-        console.error(error);
-        console.log(`On Lookup Event handled for ${address} ${family} ${host}`)
+    private onLookup = (error: Error, address: string, family: string | number, host: string) => {
+        if (error != null) {
+            console.error(error);
+        }
+        console.info(`On Lookup Event handled for ${address} ${family} ${host}`)
     }
 
-    private onTimeout = () =>
-    {
+    private onTimeout = () => {
         console.log("Connection timed out.");
     }
 }

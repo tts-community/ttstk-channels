@@ -11,9 +11,14 @@ export class TabletopSimulatorService {
     constructor(private handler: MessageHandler)
     {
         this.server = net.createServer(this.Listen);
+        this.server.on('close', ()=> console.log("Server closed"));
+        this.server.on('connection', (socket)=> console.log(`A connection has been established. Port ${socket.remotePort}`));
+        this.server.on('listening', ()=> console.log('The server has been bound to a listener.'));
+        this.server.on('error', (error)=> console.error(error)); // handle reconnection?
+        this.server.close(()=> console.log("Server closed"));
     }
 
-    public async Open ()
+    public Open ()
     {
         try
         {
@@ -28,7 +33,8 @@ export class TabletopSimulatorService {
     private Listen = (socket:net.Socket) =>
     {
         console.log(`${socket.remoteAddress}:${socket.remotePort}`);
-        socket.on("data", (data)=>{
+        socket.on('connect', ()=> console.log("client connected"));
+        socket.on('data', (data)=>{
             let message:TtsMessage = JSON.parse(data.toString());
             this.handler(message);
         });

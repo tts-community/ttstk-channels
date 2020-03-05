@@ -3,7 +3,6 @@ import {TabletopSimulatorClient} from './TabletopSimulatorClient';
 import {TtsMessage, TtsMessageId} from './domain/TabletopSimulatorTcpContracts';
 
 var service = new TabletopSimulatorService(logMessage);
-var client = new TabletopSimulatorClient();
 
 function logMessage(message:TtsMessage)
 {
@@ -40,11 +39,13 @@ async function main ()
     console.log('opening listener service on port 39998');
     service.Open();
 
-    for (var index:number = 0; index < 100; index++ )
+    for (var index:number = 0; index < 1000; index++ )
     {
-        client.ExecuteLua(`print('hello world #${index}')`);
+        var client = new TabletopSimulatorClient();
+        await client.ExecuteLuaAsync(`print('hello world #${index}')`);
+        //client.Close();
         //client.GetLuaScripts();
-        await sleep(1000);
+        //await sleep(1000);
         //client.Close();
         //client.CustomMessage({Iama: "CustomMessage"});
         //client.GetLuaScripts();
@@ -53,11 +54,11 @@ async function main ()
 
 main();
 
-function sleep(ms:number) {
-    return new Promise((resolve) => { 
-      setTimeout(resolve, ms);
-    });
-  }   
+// function sleep(ms:number) {
+//     return new Promise((resolve) => { 
+//       setTimeout(resolve, ms);
+//     });
+//   }   
 
 // const terminateAfter = (ms: number) => new Promise<void>(resolve => {
 //         setTimeout(()=>
