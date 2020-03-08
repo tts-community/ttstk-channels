@@ -80,9 +80,11 @@ export class CustomClientMessage
 
 export class ExecuteLuaClientMessage
 {
+    private static returnIdCounter:number = 1;
+
     messageID: ClientMessageId = ClientMessageId.ExecuteLua;
 
-    constructor(public readonly script:string, public readonly guid:string = "-1") {
+    constructor(public readonly script:string, public readonly guid:string = "-1", public readonly returnID = ExecuteLuaClientMessage.returnIdCounter++) {
     }
 
     public toString = () : string =>
@@ -90,6 +92,7 @@ export class ExecuteLuaClientMessage
         return JSON.stringify({
             messageID: this.messageID,
             guid: this.guid,
+            returnID: this.returnID,
             script: this.script
          });
     }
@@ -133,7 +136,8 @@ export interface CustomTtsMessage
 export interface ReturnValueTtsMessage 
 {
     messageID: TtsMessageId.ReturnValue;
-    returnValue : any;
+    returnID: number;
+    returnValue: any;
 }
 
 export interface GameSavedTtsMessage

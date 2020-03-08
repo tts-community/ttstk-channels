@@ -8,8 +8,8 @@ export class TabletopSimulatorClient {
     private connected: boolean = false;
 
     constructor() {
-        this.connection = this.createConnection();
-        this.connected = true;
+        this.connection = new net.Socket(); // dead socket.
+        this.connected = false;
     }
 
     public GetLuaScriptsAsync = () => this.sendMessageAsync(new GetLuaScriptsClientMessage());
@@ -44,13 +44,13 @@ export class TabletopSimulatorClient {
 
     private createConnection = (): net.Socket => {
         var connection = net.createConnection(this.REMOTE_PORT, this.REMOTE_DOMAIN)
-            .on('connect', this.onConnectHandler)
+        //    .on('connect', this.onConnectHandler)
             .on('data', this.onDataHandler)
-            .on('drain', this.onDrain)
+        //    .on('drain', this.onDrain)
             .on('error', this.onError)
             .on('end', this.onEnd)
             .on('close', this.onClose)
-            .on('lookup', this.onLookup)
+        //    .on('lookup', this.onLookup)
             .on('timeout', this.onTimeout);
 
         return connection;
@@ -75,12 +75,12 @@ export class TabletopSimulatorClient {
 
     private onEnd = () => {
         this.connected = false;
-        console.log("Client Connection Ended");
+        //console.log("Client Connection Ended");
     }
 
     private onClose = () => {
         this.connected = false;
-        console.log("Client Connection Closed");
+        //console.log("Client Connection Closed");
     }
 
     private onLookup = (error: Error, address: string, family: string | number, host: string) => {

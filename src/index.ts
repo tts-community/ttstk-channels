@@ -1,8 +1,16 @@
 import {TabletopSimulatorService} from './TabletopSimulatorService';
 import {TabletopSimulatorClient} from './TabletopSimulatorClient';
 import {TtsMessage, TtsMessageId} from './domain/TabletopSimulatorTcpContracts';
+import * as readline from 'readline';
 
 var service = new TabletopSimulatorService(logMessage);
+
+interface CustomMessageObjectPayload
+{
+    guid:string,
+    type:'object',
+    value:string
+}
 
 function logMessage(message:TtsMessage)
 {
@@ -20,10 +28,14 @@ function logMessage(message:TtsMessage)
             console.log(`[${message.guid}] Error: ${message.errorMessagePrefix} ${message.error}`);
             break;
         case TtsMessageId.Custom:
-            console.log(message.customMessage);
+            let objectPayload = message.customMessage as CustomMessageObjectPayload
+            console.log(JSON.parse(objectPayload.value));
             break;
         case TtsMessageId.ReturnValue:
-            console.log(message.returnValue);
+            if (message.returnValue != undefined)
+            {
+                console.log(`>>${message.returnID}>> ${message.returnValue}`);
+            }
             break;
         case TtsMessageId.GameSaved:
             console.log("Game has been saved");
@@ -31,40 +43,52 @@ function logMessage(message:TtsMessage)
         case TtsMessageId.ObjectCreated:
             console.log(`Object has been created[${message.guid}]`);
             break;
+        default:
+            console.error('what happened?!');
     }
 }
 
+const rl = readline.createInterface(process.stdin, process.stdout);
+var client = new TabletopSimulatorClient();
+
 async function main ()
 {
-    console.log('opening listener service on port 39998');
     service.Open();
 
-    for (var index:number = 0; index < 1000; index++ )
-    {
-        var client = new TabletopSimulatorClient();
-        await client.ExecuteLuaAsync(`print('hello world #${index}')`);
-        //client.Close();
-        //client.GetLuaScripts();
-        //await sleep(1000);
-        //client.Close();
-        //client.CustomMessage({Iama: "CustomMessage"});
-        //client.GetLuaScripts();
-    } 
+    console.log ("Entering Command REPL.");
+    CommandRepl();
+}
+
+async function CommandRepl()
+{
+    rl.setPrompt('?>');
+
+    let promise = new Promise<void>((resolve) =>{
+        rl.on('line', (line)=>
+        {
+            let statement = line.trim();
+            switch(statement) {
+                case '':
+                case 'exit':
+                    rl.close();
+                    break;
+                default:
+                    console.log (`Sending Command '${statement}'`);
+                    client.ExecuteLuaAsync(statement);
+                    console.log ('Command Sent');
+                    break;
+            }
+            rl.prompt();
+        });
+        
+        rl.on('close', ()=> {
+            console.log('Exiting...'); 
+            resolve();
+        });
+    });
+
+    rl.prompt();
+    return promise;
 }
 
 main();
-
-// function sleep(ms:number) {
-//     return new Promise((resolve) => { 
-//       setTimeout(resolve, ms);
-//     });
-//   }   
-
-// const terminateAfter = (ms: number) => new Promise<void>(resolve => {
-//         setTimeout(()=>
-//         {
-//             service.Close();
-//             resolve();
-//         },
-//         ms);        
-//     });
