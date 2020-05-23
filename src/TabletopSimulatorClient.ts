@@ -1,5 +1,84 @@
 import * as net from "net";
-import { ExecuteLuaClientMessage, GetLuaScriptsClientMessage, SaveAndPlayClientMessage, ScriptState, CustomClientMessage, ClientMessage } from "./domain/TabletopSimulatorTcpContracts"
+import { ScriptState } from "./domain/ScriptState";
+
+// Client Messages
+export enum ClientMessageId
+{
+    None = -1,
+    GetLuaScripts = 0,
+    SaveAndPlay = 1,
+    Custom = 2,
+    ExecuteLua = 3,
+}
+
+class GetLuaScriptsClientMessage
+{
+    messageID: ClientMessageId = ClientMessageId.GetLuaScripts;
+
+    constructor() {
+    }
+
+    public toString = () : string =>
+    {
+        return JSON.stringify({
+            messageID: this.messageID
+         });
+    }
+}
+
+class SaveAndPlayClientMessage
+{
+    messageID: ClientMessageId = ClientMessageId.SaveAndPlay;
+
+    constructor(public readonly scriptStates: ScriptState[]) {
+    }
+
+    public toString = () : string =>
+    {
+        return JSON.stringify({
+            messageID: this.messageID,
+            scriptStates: this.scriptStates
+         });
+    }
+}
+
+class CustomClientMessage
+{
+    messageID: ClientMessageId = ClientMessageId.Custom;
+
+    constructor(public readonly customMessage: object) {
+    }
+
+    public toString = () : string =>
+    {
+        return JSON.stringify({
+            messageID: this.messageID,
+            customMessage: this.customMessage
+         });
+    }
+}
+
+class ExecuteLuaClientMessage
+{
+    private static returnIdCounter:number = 1;
+
+    messageID: ClientMessageId = ClientMessageId.ExecuteLua;
+
+    constructor(public readonly script:string, public readonly guid:string = "-1", public readonly returnID = ExecuteLuaClientMessage.returnIdCounter++) {
+    }
+
+    public toString = () : string =>
+    {
+        return JSON.stringify({
+            messageID: this.messageID,
+            guid: this.guid,
+            returnID: this.returnID,
+            script: this.script
+         });
+    }
+}
+
+type ClientMessage = GetLuaScriptsClientMessage | SaveAndPlayClientMessage | CustomClientMessage | ExecuteLuaClientMessage;
 
 export class TabletopSimulatorClient {
     private readonly REMOTE_DOMAIN = "localhost";
@@ -44,28 +123,17 @@ export class TabletopSimulatorClient {
 
     private createConnection = (): net.Socket => {
         var connection = net.createConnection(this.REMOTE_PORT, this.REMOTE_DOMAIN)
-        //    .on('connect', this.onConnectHandler)
             .on('data', this.onDataHandler)
-        //    .on('drain', this.onDrain)
             .on('error', this.onError)
             .on('end', this.onEnd)
             .on('close', this.onClose)
-        //    .on('lookup', this.onLookup)
             .on('timeout', this.onTimeout);
 
         return connection;
     }
 
-    private onConnectHandler = () => {
-        console.log(`Client connected to ${this.REMOTE_DOMAIN}:${this.REMOTE_PORT}`)
-    }
-
     private onDataHandler = (data: Buffer) => {
         console.log(`Client received data '${data.toJSON().toString()}'`)
-    }
-
-    private onDrain = () => {
-        console.log('Client connection drained.');
     }
 
     private onError = (error: Error) => {
@@ -75,19 +143,10 @@ export class TabletopSimulatorClient {
 
     private onEnd = () => {
         this.connected = false;
-        //console.log("Client Connection Ended");
     }
 
     private onClose = () => {
         this.connected = false;
-        //console.log("Client Connection Closed");
-    }
-
-    private onLookup = (error: Error, address: string, family: string | number, host: string) => {
-        if (error != null) {
-            console.error(error);
-        }
-        console.info(`On Lookup Event handled for ${address} ${family} ${host}`)
     }
 
     private onTimeout = () => {

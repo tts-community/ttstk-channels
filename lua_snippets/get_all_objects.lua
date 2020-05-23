@@ -1,7 +1,7 @@
 --LUA get all objects sample.--
 
 function get_all_objects()
-    local all = getAllObjects(
+    local all = getAllObjects()
     for index, value in ipairs(all) do 
         local obj = {}
         obj['guid'] = value.guid
