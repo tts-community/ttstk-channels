@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "MIT",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -7,8 +7,8 @@
     "dist"
   ],
   "scripts": {
-    "start": "tsdx watch",
-    "build": "tsdx build",
+    "start": "tsc watch",
+    "build": "tsc",
     "test": "tsdx test",
     "lint": "tsdx lint",
     "prepare": "tsdx build"
@@ -39,5 +39,8 @@
     "typescript": "^3.8.3"
   },
   "description": "A library for the tabletop simulator toolkit to interact with the external editors apis (both client and service modes",
-  "repository": "https://github.com/Firoso/TabletopSimulator-ExternalEditorTools-Node.git"
+  "repository": "https://github.com/Firoso/TabletopSimulator-ExternalEditorTools-Node.git",
+  "dependencies": {
+    "tiny-typed-emitter": "^2.0.1"
+  }
 }
