@@ -1,5 +1,5 @@
 {
-  "version": "0.2.2",
+  "version": "0.3.0",
   "license": "MIT",
   "main": "dist/src/index.js",
   "typings": "dist/src/index.d.ts",
@@ -10,6 +10,7 @@
     "start": "tsc watch",
     "build": "tsc",
     "test": "tsdx test",
+    "debugtest": "tsdx test --inspect-brk=9229",
     "lint": "tsdx lint",
     "prepare": "tsc"
   },

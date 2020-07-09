@@ -3,8 +3,7 @@ import { TypedEmitter } from 'tiny-typed-emitter';
 import { ScriptState } from "./domain/ScriptState";
 
 // Service Messages
-enum TtsMessageId
-{
+enum TtsMessageId {
     None = -1,
     NewObject = 0,
     NewGame = 1,
@@ -16,59 +15,51 @@ enum TtsMessageId
     ObjectCreated = 7
 }
 
-interface NewObjectTtsMessage
-{
+interface NewObjectTtsMessage {
     messageID: TtsMessageId.NewObject;
     scriptStates: ScriptState[];
 }
 
-interface NewGameTtsMessage
-{
+interface NewGameTtsMessage {
     messageID: TtsMessageId.NewGame;
     scriptStates: ScriptState[];
 }
 
-interface PrintTtsMessage
-{
+interface PrintTtsMessage {
     messageID: TtsMessageId.Print;
     message: string;
 }
 
-interface ErrorTtsMessage
-{
+interface ErrorTtsMessage {
     messageID: TtsMessageId.Error;
     error: string;
     guid: string;
     errorMessagePrefix: string;
 }
 
-interface CustomTtsMessage
-{
+interface CustomTtsMessage {
     messageID: TtsMessageId.Custom;
-    customMessage : object;
+    customMessage: object;
 }
 
-interface ReturnValueTtsMessage 
-{
+interface ReturnValueTtsMessage {
     messageID: TtsMessageId.ReturnValue;
     returnID: number;
     returnValue: any;
 }
 
-interface GameSavedTtsMessage
-{
+interface GameSavedTtsMessage {
     messageID: TtsMessageId.GameSaved;
 }
 
-interface ObjectCreatedTtsMessage 
-{
+interface ObjectCreatedTtsMessage {
     messageID: TtsMessageId.ObjectCreated;
-    guid : string;
+    guid: string;
 }
 
-type TtsMessage = NewObjectTtsMessage | NewGameTtsMessage |PrintTtsMessage |ErrorTtsMessage |CustomTtsMessage |ReturnValueTtsMessage |GameSavedTtsMessage |ObjectCreatedTtsMessage;
+type TtsMessage = NewObjectTtsMessage | NewGameTtsMessage | PrintTtsMessage | ErrorTtsMessage | CustomTtsMessage | ReturnValueTtsMessage | GameSavedTtsMessage | ObjectCreatedTtsMessage;
 
-export interface TabletopSimulatorServiceEvents{
+export interface TabletopSimulatorServiceEvents {
     'newobjectmessage': (scriptStates: ScriptState[]) => void;
     'newgamemessage': (scriptStates: ScriptState[]) => void;
     'printmessage': (message: string) => void;
@@ -83,32 +74,32 @@ export interface TabletopSimulatorServiceEvents{
 export class TabletopSimulatorService extends TypedEmitter<TabletopSimulatorServiceEvents> {
     private readonly LISTENER_DOMAIN = "localhost";
     private readonly LISTENER_PORT = 39998;
-    private readonly server:net.Server;
+    private readonly server: net.Server;
 
-    constructor()
-    {
+    private body = '';
+
+    constructor() {
         super();
         this.server = net.createServer(this.Listen);
-        this.server.on('error', (error)=> this.emit('error', error));
+        this.server.on('error', (error) => this.emit('error', error));
     }
 
-    public Open ()
-    {
-        try
-        {
+    public Open() {
+        try {
             this.server.listen(this.LISTENER_PORT, this.LISTENER_DOMAIN);
         }
-        catch (err)
-        {
+        catch (err) {
             console.log(err);
         }
     }
 
-    private HandleMessage = (data:Buffer) =>{
-        let message:TtsMessage = JSON.parse(data.toString());
-        
+    private HandleData = (data: Buffer) => { this.body += data; }
+
+    private HandleMessage = () => {
+        let message: TtsMessage = JSON.parse(this.body.toString());
+
         switch (message.messageID) {
-            case TtsMessageId.NewObject: 
+            case TtsMessageId.NewObject:
                 this.emit('newobjectmessage', message.scriptStates);
                 break;
             case TtsMessageId.NewGame:
@@ -133,19 +124,19 @@ export class TabletopSimulatorService extends TypedEmitter<TabletopSimulatorServ
                 this.emit('objectcreatedmessage', message.guid);
                 break;
             default:
-                this.emit('error', new Error(`An error occurred attempting to parse a message from TTS: ${data.toString()}`));
+                this.emit('error', new Error(`An error occurred attempting to parse a message from TTS: ${this.body.toString()}`));
                 break;
         }
+        this.body = '';
     };
 
-    private Listen = (socket:net.Socket) =>
-    {
-        socket.on('data', this.HandleMessage);
-        socket.on('error', (err)=> console.warn(err?.message));
+    private Listen = (socket: net.Socket) => {
+        socket.on('data', this.HandleData);
+        socket.on('end', this.HandleMessage);
+        socket.on('error', (err) => console.warn(err?.message));
     }
 
-    public Close()
-    {
+    public Close() {
         this.server.close();
     }
 }
